@@ -28,8 +28,7 @@ class ElearcommonlibConan(ConanFile):
 
     def build(self):
         cmake = CMake(self)
-        if (self.settings.os == "Android"):
-            cmake.definitions["Platform"] = "android"
+        cmake.definitions["Platform"] = self.settings.os
         cmake.configure(source_folder=".")
         cmake.build()
         cmake.install()
