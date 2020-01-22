@@ -15,6 +15,7 @@ class ZlibConan(ConanFile):
         "fPIC": [True, False],
         "minizip": [True, False]
         }
+    default_options = {key: False for key in options.keys()}
     default_options ["shared"] = False
     default_options ["fPIC"] = True
     default_options ["minizip"] = False
