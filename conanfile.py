@@ -16,9 +16,7 @@ class ZlibConan(ConanFile):
         "minizip": [True, False]
         }
     default_options = {key: False for key in options.keys()}
-    default_options ["shared"] = False
     default_options ["fPIC"] = True
-    default_options ["minizip"] = False
     generators = "cmake"
 
     def config_options(self):
