@@ -6,12 +6,18 @@ class ZlibConan(ConanFile):
     version = "1.2.11"
     license = "<Put the package license here>"
     author = "<Put your name here> <And your email here>"
-    url = "<Package recipe repository url here, for issues about the package>"
-    description = "<Description of Zlib here>"
-    topics = ("<Put some tag here>", "<here>", "<and here>")
+    url = "https://github.com/elear-solutions/zlib"
+    description = "This recipe file used to build and package binaries of zlib repository"
+    topics = ("compression", "data")
     settings = "os", "compiler", "build_type", "arch"
-    options = {"shared": [True, False], "fPIC": [True, False], "minizip": [True, False]}
-    default_options = "shared=False", "fPIC=True", "minizip=False"
+    options = {
+        "shared": [True, False],
+        "fPIC": [True, False],
+        "minizip": [True, False]
+        }
+    default_options ["shared"] = False
+    default_options ["fPIC"] = True
+    default_options ["minizip"] = False
     generators = "cmake"
 
     def config_options(self):
