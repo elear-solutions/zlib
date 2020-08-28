@@ -25,7 +25,7 @@ class ZlibConan(ConanFile):
 
     def build(self):
         self._build_zlib()
-        cmake = CMake(self)
+        cmake = CMake(self, build_type = self.settings.build_type)
         cmake.configure(source_folder=".")
         cmake.build()
         cmake.install()

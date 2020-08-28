@@ -32,6 +32,9 @@ check_include_file(stddef.h    HAVE_STDDEF_H)
 #
 # Check to see if we have large file support
 #
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pedantic-errors -Wall -std=c11 -D_GNU_SOURCE -Os")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+set(CMAKE_C_FLAGS_RELEASE "-s -ffunction-sections -fdata-sections")
 set(CMAKE_REQUIRED_DEFINITIONS -D_LARGEFILE64_SOURCE=1)
 # We add these other definitions here because CheckTypeSize.cmake
 # in CMake 2.4.x does not automatically do so and we want
