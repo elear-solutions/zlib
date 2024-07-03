@@ -1,0 +1,72 @@
+name: Publish coco lib for mac
+
+on:
+  push:
+    branches:
+      - 'master'
+      - 'release'
+      - 'develop'
+
+jobs:
+  build_mac_images:
+    runs-on: macos-latest
+
+    strategy:
+      matrix:
+        profile: [ "ios_armv7", "ios_armv8", "ios_x86", "ios_x86_64", "macos_x86_64" ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure
+        run: |
+          brew install cmake
+          brew install autoconf
+          brew install automake
+          brew install libtool
+          brew install cmocka
+          brew install pkg-config
+          brew install conan@1
+
+      - name: Conan overwrite
+        run: |
+          echo "Overwriting conan to conan@1"
+          brew link --overwrite conan@1
+
+      - name: Copy pofiles to conan
+        run: |
+          conan profile new --detect default
+          cp toolchains/apple/profiles/* $HOME/.conan/profiles
+
+      - name: Add elear conan server
+        run: |
+          conan remote add conan_server http://conan.elear.solutions
+          cat $HOME/.conan/remotes.json
+
+      - name: Determine variant
+        run: |
+          release_version=${GITHUB_REF##*/}
+          if [ "$release_version" = "master" ]; then release_env="PROD"; fi
+          if [ "$release_version" = "release" ]; then release_env="QA"; fi
+          if [ "$release_version" = "develop" ]; then release_env="DEV"; fi
+          if [ "$release_env" = "" ]; then release_version="develop" && release_env="DEV"; fi
+          echo "release_version=$release_version" >> $GITHUB_ENV
+          echo "release_env=$release_env" >> $GITHUB_ENV
+
+      - name: Determine version
+        run: |
+          echo "package_name=$(grep -e "name.=." ./conanfile.py | awk -F\" '{print $2}')" >> $GITHUB_ENV
+          echo "package_version=$(grep -e "version.=." ./conanfile.py | awk -F\" '{print $2}')" >> $GITHUB_ENV
+
+      - name: Conan build & upload
+        env:
+          CONAN_LOGIN_USERNAME: ${{ secrets.conan_username }}
+          CONAN_PASSWORD: ${{ secrets.conan_password }}
+          package_username: ${{ secrets.conan_username }}
+        run: |
+          echo "building for $release_env"
+          conan install . $package_username/$release_version -if=build -r=conan_server --profile=${{ matrix.profile }}
+          conan build . -bf=build
+          conan export-pkg . $package_username/$release_version -bf=build -f
+          conan upload $package_name/$package_version@$package_username/$release_version --all -r=conan_server --confirm
