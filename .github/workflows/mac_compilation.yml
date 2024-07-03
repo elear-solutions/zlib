@@ -3,9 +3,7 @@ name: Publish coco lib for mac
 on:
   push:
     branches:
-      - 'master'
-      - 'release'
-      - 'develop'
+      - '**'
 
 jobs:
   build_mac_images:
@@ -46,13 +44,7 @@ jobs:
 
       - name: Determine variant
         run: |
-          release_version=${GITHUB_REF##*/}
-          if [ "$release_version" = "master" ]; then release_env="PROD"; fi
-          if [ "$release_version" = "release" ]; then release_env="QA"; fi
-          if [ "$release_version" = "develop" ]; then release_env="DEV"; fi
-          if [ "$release_env" = "" ]; then release_version="develop" && release_env="DEV"; fi
-          echo "release_version=$release_version" >> $GITHUB_ENV
-          echo "release_env=$release_env" >> $GITHUB_ENV
+          release_version="master"
 
       - name: Determine version
         run: |
@@ -61,9 +53,9 @@ jobs:
 
       - name: Conan build & upload
         env:
-          CONAN_LOGIN_USERNAME: ${{ secrets.conan_username }}
-          CONAN_PASSWORD: ${{ secrets.conan_password }}
-          package_username: ${{ secrets.conan_username }}
+          CONAN_LOGIN_USERNAME: "jenkins"
+          CONAN_PASSWORD: "tuXAC399nZ4wp6s81urg"
+          package_username: "jenkins"
         run: |
           echo "building for $release_env"
           conan install . $package_username/$release_version -if=build -r=conan_server --profile=${{ matrix.profile }}
