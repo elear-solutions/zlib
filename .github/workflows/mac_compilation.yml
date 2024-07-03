@@ -53,9 +53,9 @@ jobs:
 
       - name: Conan build & upload
         env:
-          CONAN_LOGIN_USERNAME: "jenkins"
-          CONAN_PASSWORD: "tuXAC399nZ4wp6s81urg"
-          package_username: "jenkins"
+          CONAN_LOGIN_USERNAME: jenkins
+          CONAN_PASSWORD: tuXAC399nZ4wp6s81urg
+          package_username: jenkins
         run: |
           echo "building for $release_env"
           conan install . $package_username/$release_version -if=build -r=conan_server --profile=${{ matrix.profile }}
