@@ -60,4 +60,4 @@ jobs:
           conan install . jenkins/master -if=build -r=conan_server --profile=${{ matrix.profile }}
           conan build . -bf=build
           conan export-pkg . jenkins/master -bf=build -f
-          conan upload $package_name/$package_version@$jenkins/master --all -r=conan_server --confirm
+          conan upload $package_name/$package_version@jenkins/master --all -r=conan_server --confirm
