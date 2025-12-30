@@ -32,10 +32,13 @@ class ZlibConan(ConanFile):
             self._modified_files_backup = {}
         self._build_zlib()
         cmake = CMake(self)
-        cmake.configure(source_folder=".")
-        cmake.build()
-        cmake.install()
-        self._restore_modified_files()
+        try:
+            cmake.configure(source_folder=".")
+            cmake.build()
+            cmake.install()
+        finally:
+            # Always restore modified files after build, even if it fails
+            self._restore_modified_files()
 
     def package(self):
         self.copy("*.h", dst="include", src="package/include")
