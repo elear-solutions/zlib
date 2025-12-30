@@ -25,3 +25,5 @@
 
 .DS_Store
 /build
+*.conan_backup
+zconf.h.included
