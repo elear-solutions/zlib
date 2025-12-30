@@ -1,5 +1,6 @@
 import os
 import shutil
+import filecmp
 from conans import ConanFile, CMake, tools
 
 
@@ -20,13 +21,15 @@ class ZlibConan(ConanFile):
     default_options = {key: False for key in options.keys()}
     default_options ["fPIC"] = True
     generators = "cmake"
-    _modified_files_backup = {}
 
     def config_options(self):
         if self.settings.os == "Windows":
             del self.options.fPIC
 
     def build(self):
+        # Initialize instance variable to track modified files
+        if not hasattr(self, '_modified_files_backup'):
+            self._modified_files_backup = {}
         self._build_zlib()
         cmake = CMake(self)
         cmake.configure(source_folder=".")
@@ -54,13 +57,29 @@ class ZlibConan(ConanFile):
         # Backup files before modifying
         for filename in files_to_modify:
             filepath = os.path.join(source_dir, filename)
-            if os.path.isfile(filepath) and filename not in self._modified_files_backup:
-                backup_path = filepath + ".conan_backup"
-                # If backup exists from previous crashed build, restore first
-                if os.path.isfile(backup_path):
-                    shutil.copy2(backup_path, filepath)
-                    self.output.info("Restored %s from previous backup" % filename)
-                # Create new backup
+            if not os.path.isfile(filepath) or filename in self._modified_files_backup:
+                continue
+                
+            backup_path = filepath + ".conan_backup"
+            
+            # If backup exists from previous crashed build, handle it safely
+            if os.path.isfile(backup_path):
+                if not filecmp.cmp(filepath, backup_path, shallow=False):
+                    # Files differ - check if current file has our modifications
+                    if self._file_has_our_modifications(filepath, filename):
+                        shutil.copy2(backup_path, filepath)
+                        self.output.info("Restored %s from previous backup" % filename)
+                    else:
+                        # File appears manually modified, keep it and remove stale backup
+                        self.output.warn("Found stale backup for %s, but file appears manually modified. Keeping current file." % filename)
+                        os.remove(backup_path)
+                else:
+                    # Files are identical, remove stale backup
+                    self.output.info("Removing stale backup for %s" % filename)
+                    os.remove(backup_path)
+            
+            # Create new backup (only if we haven't already tracked this file)
+            if filename not in self._modified_files_backup:
                 shutil.copy2(filepath, backup_path)
                 self._modified_files_backup[filename] = backup_path
                 self.output.info("Backed up %s" % filename)
@@ -81,6 +100,27 @@ class ZlibConan(ConanFile):
                                           '#if defined(HAVE_STDARG_H) && (1-HAVE_STDARG_H-1 != 0)')
         except Exception as e:
             self.output.info("File modifications failed or already applied: %s" % str(e))
+
+    def _file_has_our_modifications(self, filepath, filename):
+        """Check if file contains our modifications to determine if restoration is safe"""
+        try:
+            with open(filepath, 'r') as f:
+                content = f.read()
+            
+            # Check for modifications we make to gzguts.h
+            if filename == 'gzguts.h':
+                # Check for MINGW32 modification (we replace CYGWIN with MINGW32)
+                if '#if defined(_WIN32) || defined(__MINGW32__)' in content:
+                    return True
+            # Check for modifications we make to zconf.h files
+            elif filename in ['zconf.h', 'zconf.h.cmakein', 'zconf.h.in']:
+                # Check for our HAVE_UNISTD_H modification pattern
+                if '#if defined(HAVE_UNISTD_H) && (1-HAVE_UNISTD_H-1 != 0)' in content:
+                    return True
+        except Exception:
+            # If we can't read the file, err on the side of caution and don't restore
+            return False
+        return False
 
     def _restore_modified_files(self):
         """Restore modified files from backup after build completes"""
